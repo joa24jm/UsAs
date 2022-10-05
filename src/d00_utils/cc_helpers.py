@@ -28,15 +28,19 @@ def drop_ambiguous_users(df):
 
         if sub_df.shape[0] > 0:
 
-            # most common age
-            mca = sub_df.age.value_counts().index[0]
-            f1 = (sub_df.age == mca)
-            # most common education
-            mce = sub_df.education.value_counts().index[0]
-            f2 = (sub_df.education == mce)
-            # most common gender
-            mcg = sub_df.gender.value_counts().index[0]
-            f3 = (sub_df.gender == mcg)
+            try:
+                # most common age
+                mca = sub_df.age.value_counts().index[0]
+                f1 = (sub_df.age == mca)
+                # most common education
+                mce = sub_df.education.value_counts().index[0]
+                f2 = (sub_df.education == mce)
+                # most common gender
+                mcg = sub_df.gender.value_counts().index[0]
+                f3 = (sub_df.gender == mcg)
+
+            except: # some users skipped those baseline questions - we drop all assessments from those
+                continue
 
             filtered_assessments = sub_df[f1 & f2 & f3].index
             assessments_to_drop = list(set(all_assessments)-set(filtered_assessments))
@@ -62,12 +66,12 @@ def drop_one_time_users(df):
 def main():
     sys.path.insert(0, "../..")
 
-    df = pd.read_csv('../../data/d01_raw/cc/22-06-29_corona-check-data.csv')
+    df = pd.read_csv('../../data/d01_raw/cc/22-10-05_corona-check-data.csv')
 
     print('shape at start', df.shape)
     df = drop_one_time_users(df)
 
-    print('shape without oneo-time-users', df.shape)
+    print('shape without one-time-users', df.shape)
     df = drop_ambiguous_users(df)
 
     print('final shape with distinct users', df.shape)
