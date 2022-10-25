@@ -6,28 +6,6 @@ from datetime import date, datetime
 import numpy as np
 
 
-def drop_test_users(df_name: str, df: pd.DataFrame):
-    """
-    Drop testusers given a list of user_ids.
-    
-    :param df_name: name of dataframe in helpers excel, either 'uniti' or 'tyt'
-    :param df: pandas dataframe object
-    :return: dataframe with no testusers
-    """
-
-    if df_name == 'tyt':
-        testusers = pd.read_excel('../../data/d00_helpers/testusers.xlsx', sheet_name=df_name)
-        testusers = testusers.id.to_list()
-        df = df[~df['user_id'].isin(testusers)]
-
-    if df_name == 'uniti':
-        testusers_pattern = '000'
-        # TODO Check pattern of user ids to drop
-        pass
-
-    return df
-
-
 def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at'):
     """
     Takes a dataframe df and returns a dict that describes the duration of two filled out
@@ -72,7 +50,6 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
 
 
 def main():
-
     """
     # test find schedule pattern
     # read in a sample dataframe, uncomment to test
@@ -84,7 +61,7 @@ def main():
     """
 
     ### Test drop testusers
-    df = pd.read_csv('../../data/d01_raw/tyt/22-10-10_standardanswers.csv', index_col='Unnamed: 0')
+    df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv', index_col='Unnamed: 0')
     df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
     drop_test_users('uniti', df)
 
