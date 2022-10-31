@@ -49,21 +49,38 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
             'std_days': np.array(days_means).std()}  # std of length between two filled out assessments in days
 
 
-def main():
+def create_target_shift(df, target_name='target'):
     """
-    # test find schedule pattern
-    # read in a sample dataframe, uncomment to test
-    df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_stress_followup.csv')
-    # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_parent_followup.csv')
-    # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv')
-    res = find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at')
-    print(res)
+    Find the next target_t1 for each user and add it as a single column.
+    :param df: dataframe with user_id, answer_id, created_at, features, target_t0
+    :return: df with added column target_t1
     """
 
-    ### Test drop testusers
-    df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv', index_col='Unnamed: 0')
+    # for each user, get target value of the next assessment
+    df[f'{target_name}_t1'] = df.groupby('user_id')[f'{target_name}'].shift(periods=1, axis='index')
+
+    # drop assessments where target is unknown
+    df.dropna(subset=[f'{target_name}_t1'], inplace=True)
+
+    return df
+
+
+def main():
+    # # test find schedule pattern
+    # # read in a sample dataframe, uncomment to test
+    # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_stress_followup.csv')
+    # # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_parent_followup.csv')
+    # # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv')
+    # res = find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at')
+    # print(res)
+
+    # df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv', index_col='Unnamed: 0')
     df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
-    drop_test_users('uniti', df)
+    print(df.shape)
+
+    # test target shift
+    df = create_target_shift(df, target_name='cumberness')
+    print(df.shape)
 
 
 if __name__ == '__main__':
