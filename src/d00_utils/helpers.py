@@ -6,6 +6,63 @@ from datetime import date, datetime
 import numpy as np
 
 
+class baseline_model:
+
+    def get_baseline_user_prediction(user_id='None', df_train='None', target_name='None', approach='last'):
+        """
+        Gets a baseline prediction on a user level. Can either return the last known target of this user or all targets.
+        :param user_id: user id of user
+        :param df_train: training data of this fold
+        :param target_name: name of target
+        :param approach: 'last' or 'all'
+        :return: prediction for target at t1
+        """
+
+        user_data = df_train[df_train.user_id == user_id]
+
+        if approach == 'last':
+            prediction = user_data.sort_values(by='created_at').iloc[-1, :][target_name]
+            return prediction
+
+        if approach == 'all':
+            prediction = user_data[target_name].mean()
+            return prediction
+
+        # if arrive here, something is wrong.
+        raise ValueError('Something with function call is wrong')
+
+    def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last'):
+        """
+        Gets a baseline prediction on an assessment level. Can either return the last known target of this user or all targets.
+        :param df_train: train data of this fold
+        :param target_name: name of target
+        :param approach: 'all' or 'last'
+        :return: prediction for target at t1
+        """
+
+        data['baseline_estimate'] = None
+
+        for i in range(data.shape[0]):
+
+                if approach == 'last':
+                    if i == 0:
+                        pred = data[target_name].mean()
+                    else:
+                        pred = data.iloc[i - 1, :][target_name]
+                    data['baseline_estimate'].iloc[i] = pred
+
+                if approach == 'all':
+                    if i == 0:
+                        # cold start problem, so take mean of all assessments
+                        pred = data[target_name].mean()
+                    else:
+                        # mean of all so far known assessments
+                        pred = data.iloc[:i, :][target_name].mean()
+                    data['baseline_estimate'].iloc[i] = pred
+
+        return data['baseline_estimate']
+
+
 def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at'):
     """
     Takes a dataframe df and returns a dict that describes the duration of two filled out
@@ -76,11 +133,31 @@ def main():
 
     # df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv', index_col='Unnamed: 0')
     df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
-    print(df.shape)
+    # print(df.shape)
+    #
+    # # test target shift
+    # df = create_target_shift(df, target_name='cumberness')
+    # print(df.shape)
 
-    # test target shift
-    df = create_target_shift(df, target_name='cumberness')
-    print(df.shape)
+    # test baseline approach
+    df_train = df
+    sample = df_train.sample(n=1)
+    time_column = 'created_at'
+    time_stamp = sample[time_column]
+    target_name = 'cumberness'
+    user_id = df_train.sample(n=1).user_id.iloc[0]
+
+    model = baseline_model()
+
+    # print('user')
+    # for approach in ['last', 'all']:
+    #     pred = model.get_baseline_user_prediction(user_id=user_id, df_train=df_train, target_name=target_name,
+    #                                                        approach=approach)
+    #     print(approach, '\t', pred)
+    print('assessment')
+    for approach in ['last', 'all']:
+        pred = model.get_baseline_assessment_prediction(data=df_train, target_name=target_name, approach=approach)
+        print(approach, '\t', pred)
 
 
 if __name__ == '__main__':
