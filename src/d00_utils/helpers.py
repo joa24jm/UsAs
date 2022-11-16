@@ -8,28 +8,39 @@ import numpy as np
 
 class baseline_model:
 
-    def get_baseline_user_prediction(user_id='None', df_train='None', target_name='None', approach='last'):
+    def get_baseline_user_prediction(self, data='None', target_name='None', approach='last'):
         """
         Gets a baseline prediction on a user level. Can either return the last known target of this user or all targets.
-        :param user_id: user id of user
-        :param df_train: training data of this fold
+        :param data: training data of this fold
         :param target_name: name of target
         :param approach: 'last' or 'all'
         :return: prediction for target at t1
         """
 
-        user_data = df_train[df_train.user_id == user_id]
+        gb = data.groupby('user_id')
+        groups = dict(list(gb))
 
-        if approach == 'last':
-            prediction = user_data.sort_values(by='created_at').iloc[-1, :][target_name]
-            return prediction
+        data['baseline_estimate'] = None
 
-        if approach == 'all':
-            prediction = user_data[target_name].mean()
-            return prediction
+        for user_id in groups.keys():
 
-        # if arrive here, something is wrong.
-        raise ValueError('Something with function call is wrong')
+            user_data = data.loc[gb.groups[user_id]]
+
+            for i, idx in enumerate(user_data.index):
+                if i == 0:
+                    # for first data of this user, there is no former data known
+                    data.loc[idx, 'baseline_estimate'] = data.loc[:idx, 'cumberness'].mean()
+                else:
+                    if approach == 'last':
+                        # last assessment of this user
+                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[i-1]['cumberness']
+
+                    if approach == 'all':
+                        # all assessments of this user
+                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i-1]['cumberness'].mean()
+
+        return data['baseline_estimate'].fillna(50) #TODO Fix na values. There must be none.
+
 
     def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last'):
         """
@@ -44,23 +55,36 @@ class baseline_model:
 
         for i in range(data.shape[0]):
 
-                if approach == 'last':
-                    if i == 0:
-                        pred = data[target_name].mean()
-                    else:
-                        pred = data.iloc[i - 1, :][target_name]
-                    data['baseline_estimate'].iloc[i] = pred
+            if approach == 'last':
+                if i == 0:
+                    pred = data[target_name].mean()
+                else:
+                    pred = data.iloc[i - 1, :][target_name]
+                data['baseline_estimate'].iloc[i] = pred
 
-                if approach == 'all':
-                    if i == 0:
-                        # cold start problem, so take mean of all assessments
-                        pred = data[target_name].mean()
-                    else:
-                        # mean of all so far known assessments
-                        pred = data.iloc[:i, :][target_name].mean()
-                    data['baseline_estimate'].iloc[i] = pred
+            if approach == 'all':
+                if i == 0:
+                    # cold start problem, so take mean of all assessments
+                    pred = data[target_name].mean()
+                else:
+                    # mean of all so far known assessments
+                    pred = data.iloc[:i, :][target_name].mean()
+                data['baseline_estimate'].iloc[i] = pred
 
         return data['baseline_estimate']
+
+
+def shuffle_array(user_array, n, seed=1994):
+    """
+    Shuffles array of user_id into n lists.
+    :param user_array: array of user ids
+    :param n: number of chunks
+    :return: n arrays with user ids
+    """
+
+    np.random.seed(seed)
+    np.random.shuffle(user_array)
+    return np.array_split(user_array, n)
 
 
 def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at'):
@@ -122,6 +146,7 @@ def create_target_shift(df, target_name='target'):
     return df
 
 
+
 def main():
     # # test find schedule pattern
     # # read in a sample dataframe, uncomment to test
@@ -138,6 +163,10 @@ def main():
     # # test target shift
     # df = create_target_shift(df, target_name='cumberness')
     # print(df.shape)
+
+    # read in df
+    df = pd.read_csv('../../data/d02_processed/uniti/uniti.csv', index_col='answer_id')
+
 
     # test baseline approach
     df_train = df
@@ -156,7 +185,8 @@ def main():
     #     print(approach, '\t', pred)
     print('assessment')
     for approach in ['last', 'all']:
-        pred = model.get_baseline_assessment_prediction(data=df_train, target_name=target_name, approach=approach)
+        # pred = model.get_baseline_assessment_prediction(data=df_train, target_name=target_name, approach=approach)
+        pred = model.get_baseline_user_prediction(data=df_train, target_name=target_name, approach=approach)
         print(approach, '\t', pred)
 
 
