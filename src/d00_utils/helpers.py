@@ -138,7 +138,8 @@ def create_target_shift(df, target_name='target'):
     """
 
     # for each user, get target value of the next assessment
-    df[f'{target_name}_t1'] = df.groupby('user_id')[f'{target_name}'].shift(periods=1, axis='index')
+
+    df[f'{target_name}_t1'] = df.sort_values(by=['user_id','created_at']).groupby('user_id')[f'{target_name}'].shift(periods=-1, axis='index')
 
     # drop assessments where target is unknown
     df.dropna(subset=[f'{target_name}_t1'], inplace=True)
@@ -161,11 +162,11 @@ def main():
     # print(df.shape)
     #
     # # test target shift
-    # df = create_target_shift(df, target_name='cumberness')
+    df = create_target_shift(df, target_name='cumberness')
     # print(df.shape)
 
     # read in df
-    df = pd.read_csv('../../data/d02_processed/uniti/uniti.csv', index_col='answer_id')
+    df = pd.read_csv('/home/mvishnu/projects/UsAs/data/d02_processed/uniti.csv', index_col='answer_id')
 
 
     # test baseline approach
