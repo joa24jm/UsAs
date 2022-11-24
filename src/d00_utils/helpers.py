@@ -33,14 +33,13 @@ class baseline_model:
                 else:
                     if approach == 'last':
                         # last assessment of this user
-                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[i-1]['cumberness']
+                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[i - 1]['cumberness']
 
                     if approach == 'all':
                         # all assessments of this user
-                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i-1]['cumberness'].mean()
+                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i - 1]['cumberness'].mean()
 
-        return data['baseline_estimate'].fillna(50) #TODO Fix na values. There must be none.
-
+        return data['baseline_estimate'].fillna(50)  # TODO Fix na values. There must be none.
 
     def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last'):
         """
@@ -130,22 +129,23 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
             'std_days': np.array(days_means).std()}  # std of length between two filled out assessments in days
 
 
-def create_target_shift(df, target_name='target'):
+def create_target_shift(df, target_name='target', shift_period=1):
     """
     Find the next target_t1 for each user and add it as a single column.
     :param df: dataframe with user_id, answer_id, created_at, features, target_t0
+    :param target_name: the variable that needs to be shifted
+    :param shift_period: The number of lags to apply to target variable.
     :return: df with added column target_t1
     """
 
-    # for each user, get target value of the next assessment
-
-    df[f'{target_name}_t1'] = df.sort_values(by=['user_id','created_at']).groupby('user_id')[f'{target_name}'].shift(periods=-1, axis='index')
+    # for each user, get target value of assessment after shift_period lags have been applied (default = 1)
+    df[f'{target_name}_t1'] = df.sort_values(by=['user_id', 'created_at']).groupby('user_id')[f'{target_name}'].shift(
+        periods=-shift_period, axis='index')
 
     # drop assessments where target is unknown
     df.dropna(subset=[f'{target_name}_t1'], inplace=True)
 
     return df
-
 
 
 def main():
@@ -167,7 +167,6 @@ def main():
 
     # read in df
     df = pd.read_csv('/home/mvishnu/projects/UsAs/data/d02_processed/uniti.csv', index_col='answer_id')
-
 
     # test baseline approach
     df_train = df
