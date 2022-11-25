@@ -5,11 +5,16 @@ from datetime import datetime
 import numpy as np
 # imports
 import pandas as pd
+from sklearn.metrics import confusion_matrix, f1_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 
 
 class baseline_model:
 
-    def get_baseline_user_prediction(self, data='None', target_name='None', approach='last'):
+    def get_baseline_user_prediction(self, data='None', target_name='None', approach='last', time_col='created_at'):
         """
         Gets a baseline prediction on a user level. Can either return the last known target of this user or all targets.
         :param data: training data of this fold
@@ -26,23 +31,25 @@ class baseline_model:
         for user_id in groups.keys():
 
             user_data = data.loc[gb.groups[user_id]]
+            user_data = user_data.sort_values(by=time_col)
 
             for i, idx in enumerate(user_data.index):
                 if i == 0:
                     # for first data of this user, there is no former data known
-                    data.loc[idx, 'baseline_estimate'] = data.loc[:idx, 'cumberness'].mean()
+                    data.loc[idx, 'baseline_estimate'] = data.loc[:idx, target_name].mean()
                 else:
                     if approach == 'last':
                         # last assessment of this user
-                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[i - 1]['cumberness']
-
+                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[i - 1][target_name]
+        
                     if approach == 'all':
                         # all assessments of this user
-                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i - 1]['cumberness'].mean()
+                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i - 1][target_name].mean()
 
         return data['baseline_estimate'].fillna(50)  # TODO Fix na values. There must be none.
 
-    def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last'):
+    def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last',
+                                           time_col='created_at'):
         """
         Gets a baseline prediction on an assessment level. Can either return the last known target of this user or all targets.
         :param df_train: train data of this fold
@@ -52,6 +59,7 @@ class baseline_model:
         """
 
         data['baseline_estimate'] = None
+        data = data.sort_values(by=time_col)
 
         for i in range(data.shape[0]):
 
@@ -142,7 +150,7 @@ def calc_cum_mean(df, features, user_id='user_id'):
 
     # calculate
     for feature in features:
-        grp = df.groupby(user_id)[feature]
+        grp = df.groupby(user_id, group_keys=False)[feature]
         df[f'{feature}_cum_sum'] = grp.apply(lambda p: p.cumsum())
         df[f'{feature}_cum_mean'] = df[f'{feature}_cum_sum'] / \
                                     grp.apply(lambda x: pd.Series(np.arange(1, len(x) + 1), x.index))
@@ -152,6 +160,56 @@ def calc_cum_mean(df, features, user_id='user_id'):
         df.rename(columns={f'{feature}_cum_mean': f'{feature}'}, inplace=True)
 
     return df
+
+
+def visualize_confusion_matrix(y_test, y_pred, mapping, final_score):
+    """
+    Prints a confusion matrix to console.
+    :param final_score: final score of this approach
+    :param y_test: array of ground truth classifictions
+    :param y_pred: array of predicted classes
+    :param mapping: dict that maps class encodings to readable classes
+    :return: None
+    """
+    cf_matrix = confusion_matrix(y_test, y_pred)
+    cm_array_df = pd.DataFrame(cf_matrix, index=list(mapping.values()), columns=list(mapping.values()))
+    sns.heatmap(cm_array_df, annot=True, cmap='Blues', fmt='')
+    plt.title(f'Final score {round(final_score, 3)}')
+    plt.show()
+
+
+def calc_final_score(scores, y_pred_test, y_test):
+    """
+    Calculates the final score of an approach
+    :param y_test: ground truth arrray of test set
+    :param scores: np array with scores of train folds during cross validation
+    :param y_pred_test: y_pred of the test set
+    :return: f1 for test set and final score
+    """
+    f1_test = f1_score(y_test, y_pred_test, average='weighted')
+    f1_final = f1_test - 0.5 * scores.std()
+    return f1_test, f1_final
+
+
+def fit_and_calc_score(model, X_train, X_test, y_train, y_test, scores):
+    """
+    fit model and all X_train, predict on y_test and calc score
+    :param model:
+    :param X_train:
+    :param y_train:
+    :return:
+    """
+
+    # refit on all training data
+    model.fit(X_train, y_train)
+
+    # evaluate on test set
+    y_pred = model.predict(X_test)
+
+    f1_test, f1_final = calc_final_score(scores, y_pred, y_test)
+    print('f1_weighted testscore: ', round(f1_test, 3))
+
+    return y_pred, f1_final
 
 
 def create_target_shift(df, target_name='target'):
@@ -172,15 +230,70 @@ def create_target_shift(df, target_name='target'):
     return df
 
 
-def main():
-    # # test find schedule pattern
-    # # read in a sample dataframe, uncomment to test
-    # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_stress_followup.csv')
-    # # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_parent_followup.csv')
-    # # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv')
-    # res = find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at')
-    # print(res)
+def cut_target(y_train, y_test, bins, LE, fit=False):
+    """
+    Cuts regression target into bins
+    :param y_train: target series
+    :param y_test: target series
+    :param bins: list of bins
+    :param LE: Label Encoder object
+    :param fit: Whether to refit Label Encoder
+    :return: y_train, y_test
+    """
 
+    # make cumberness a classification instead of regression for the target, not for the feature
+    y_train = pd.cut(y_train, bins=bins)
+    y_test = pd.cut(y_test, bins=bins)
+
+    if fit:
+        LE = LabelEncoder()
+        y_train = LE.fit_transform(y_train)
+    else:
+        y_train = LE.transform(y_train)
+    y_test = LE.transform(y_test)
+
+    return y_train, y_test
+
+
+def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=False):
+    """
+
+    :param df_train: Whole dataframe with features, target, created_at, user_id for train rows
+    :param df_test: Whole dataframe with features, target, created_at, user_id for test rows
+    :param features: list of features
+    :param target: name of target column
+    :param bins: intervals to cut a regression target into classification, i.e. [0, 20, 40, 60, 80, 100]
+    :param LE: Label Encoder object
+    :return:
+    """
+
+    # get train and test subsets for X and y
+    X_train = df_train[features]
+    y_train = df_train[target]
+    X_test = df_test[features]
+    y_test = df_test[target]
+
+    y_train, y_test = cut_target(y_train, y_test, bins, LE, fit=fit)
+
+    # instantiate model
+    model = RandomForestClassifier(random_state=1994)
+
+    return model, X_train, X_test, y_train, y_test
+
+
+################################################################# tests
+
+def test_find_schedule_pattern():
+    # test find schedule pattern
+    # read in a sample dataframe, uncomment to test
+    df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_stress_followup.csv')
+    # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_parent_followup.csv')
+    # df = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv')
+    res = find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_at')
+    print(res)
+
+
+def test_create_target_shift():
     # df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv', index_col='Unnamed: 0')
     df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
     # print(df.shape)
@@ -189,35 +302,44 @@ def main():
     df = create_target_shift(df, target_name='cumberness')
     # print(df.shape)
 
-    # read in df
-    df = pd.read_csv('/home/mvishnu/projects/UsAs/data/d02_processed/uniti.csv', index_col='answer_id')
 
+def test_calc_cum_mean():
     # test cumulative mean
     cols = ['user_id', 'values', 'values2']
     test_df = df = pd.DataFrame([['A', 1, 10], ['A', 2, 20], ['A', 3, 30], ['B', 2, 20], ['B', 4, 40], ['B', 5, 50]],
                                 columns=cols)
-    calc_cum_mean(test_df, features=cols[1:], user_id=cols[0])
+    return calc_cum_mean(test_df, features=cols[1:], user_id=cols[0])
 
+
+def test_class_model(df):
     # test baseline approach
-    df_train = df
-    sample = df_train.sample(n=1)
-    time_column = 'created_at'
-    time_stamp = sample[time_column]
     target_name = 'cumberness'
-    user_id = df_train.sample(n=1).user_id.iloc[0]
-
     model = baseline_model()
+    for approach in ['last', 'all']:
+        pred = model.get_baseline_user_prediction(data=df, target_name=target_name, approach=approach)
+        print(approach, '\t', pred)
+    for approach in ['last', 'all']:
+        # pred = model.get_baseline_assessment_prediction(data=df_train, target_name=target_name, approach=approach)
+        pred = model.get_baseline_user_prediction(data=df, target_name=target_name, approach=approach)
+        print(approach, '\t', pred)
 
-    # print('user')
-    # for approach in ['last', 'all']:
-    #     pred = model.get_baseline_user_prediction(user_id=user_id, df_train=df_train, target_name=target_name,
-    #                                                        approach=approach)
-    #     print(approach, '\t', pred)
-    # print('assessment')
-    # for approach in ['last', 'all']:
-    #    # pred = model.get_baseline_assessment_prediction(data=df_train, target_name=target_name, approach=approach)
-    #    pred = model.get_baseline_user_prediction(data=df_train, target_name=target_name, approach=approach)
-    #    print(approach, '\t', pred)
+
+def test_visualize_confusion_matrix():
+    y_pred = [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    y_test = [1, 0, 0, 2, 1, 1, 3, 2, 2]
+    final_score = .8
+    mapping = {0: 'Class 0',
+               1: 'Class 1',
+               2: 'Class 2',
+               3: 'Class 3'}
+
+    visualize_confusion_matrix(y_test, y_pred, mapping, final_score)
+
+
+def main():
+    df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
+
+    test_class_model(df)
 
 
 if __name__ == '__main__':
