@@ -55,23 +55,24 @@ class baseline_model:
                                            time_col='created_at'):
         """
         Gets a baseline prediction on an assessment level. Can either return the last known target of this user or all targets.
-        :param df_train: train data of this fold
+        :param data: train data of this fold
         :param target_name: name of target
         :param approach: 'all' or 'last'
+        :param time_col: name of timestamp column
         :return: prediction for target at t1
         """
 
         data['baseline_estimate'] = None
         data = data.sort_values(by=time_col)
 
-        for i in range(data.shape[0]):
+        for i, a_id in enumerate(data.index):
 
             if approach == 'last':
                 if i == 0:
                     pred = data[target_name].mean()
                 else:
-                    pred = data.iloc[i - 1, :][target_name]
-                data.at[i, 'baseline_estimate'] = pred
+                    pred = data.iloc[i - 1][target_name]
+                data.loc[a_id, 'baseline_estimate'] = pred
 
             if approach == 'all':
                 if i == 0:
@@ -79,8 +80,8 @@ class baseline_model:
                     pred = data[target_name].mean()
                 else:
                     # mean of all so far known assessments
-                    pred = data.iloc[:i + 1, :][target_name].mean()
-                data.at[i, 'baseline_estimate'] = pred
+                    pred = data.iloc[:i + 1][target_name].mean()
+                data.loc[a_id, 'baseline_estimate'] = pred
 
         return data['baseline_estimate']
 
