@@ -32,21 +32,24 @@ class baseline_model:
 
             user_data = data.loc[gb.groups[user_id]]
             user_data = user_data.sort_values(by=time_col)
+            user_data['baseline_estimate'] = None
 
             for i, idx in enumerate(user_data.index):
                 if i == 0:
                     # for first data of this user, there is no former data known
-                    data.loc[idx, 'baseline_estimate'] = data.loc[:idx, target_name].mean()
+                    user_data.loc[idx, 'baseline_estimate'] = data.loc[:idx, target_name].mean()
                 else:
                     if approach == 'last':
                         # last assessment of this user
-                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[i - 1][target_name]
-        
+                        user_data.loc[idx, 'baseline_estimate'] = user_data.iloc[i - 1][target_name]
+
                     if approach == 'all':
                         # all assessments of this user
-                        data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i - 1][target_name].mean()
+                        user_data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i + 1][target_name].mean()
 
-        return data['baseline_estimate'].fillna(50)  # TODO Fix na values. There must be none.
+            data.loc[user_data.index, 'baseline_estimate'] = user_data['baseline_estimate']
+
+        return data['baseline_estimate']
 
     def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last',
                                            time_col='created_at'):
@@ -68,7 +71,7 @@ class baseline_model:
                     pred = data[target_name].mean()
                 else:
                     pred = data.iloc[i - 1, :][target_name]
-                data['baseline_estimate'].iloc[i] = pred
+                data.at[i, 'baseline_estimate'] = pred
 
             if approach == 'all':
                 if i == 0:
@@ -76,8 +79,8 @@ class baseline_model:
                     pred = data[target_name].mean()
                 else:
                     # mean of all so far known assessments
-                    pred = data.iloc[:i, :][target_name].mean()
-                data['baseline_estimate'].iloc[i] = pred
+                    pred = data.iloc[:i + 1, :][target_name].mean()
+                data.at[i, 'baseline_estimate'] = pred
 
         return data['baseline_estimate']
 
@@ -316,12 +319,10 @@ def test_class_model(df):
     target_name = 'cumberness'
     model = baseline_model()
     for approach in ['last', 'all']:
-        pred = model.get_baseline_user_prediction(data=df, target_name=target_name, approach=approach)
-        print(approach, '\t', pred)
-    for approach in ['last', 'all']:
-        # pred = model.get_baseline_assessment_prediction(data=df_train, target_name=target_name, approach=approach)
-        pred = model.get_baseline_user_prediction(data=df, target_name=target_name, approach=approach)
-        print(approach, '\t', pred)
+        # pred_series = model.get_baseline_user_prediction(data=df, target_name=target_name, approach=approach)
+        pred_series = model.get_baseline_assessment_prediction(data=df, target_name=target_name, approach=approach)
+        print(approach, '\t', pred_series)
+
 
 
 def test_visualize_confusion_matrix():
