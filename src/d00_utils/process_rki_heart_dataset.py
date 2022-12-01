@@ -9,7 +9,7 @@ def get_rki_heart_columns():
             'physi1', 'physi2', 'hospi1', 'hospi2', 'medic3', 'pain1', 'pain2']
 
 
-def load_rki_heart_dataset(filepath: str = "data/d01_raw/ch/22-07-01_rki_heart_followup.csv",
+def load_rki_heart_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv",
                            user_id_col: str = 'user_id', timestamp_col: str = 'created_at'):
     """
     Creates the RKI heart dataset. Not following convention - excluding the target_col param because it is computed in this case.
@@ -27,7 +27,7 @@ def load_rki_heart_dataset(filepath: str = "data/d01_raw/ch/22-07-01_rki_heart_f
 
 def main():
     rki_heart_dataset = load_rki_heart_dataset()
-    rki_heart_dataset.to_csv("data/d02_processed/rki_heart.csv", index=False)
+    rki_heart_dataset.to_csv("../../data/d02_processed/rki_heart.csv", index=False)
 
 
 if __name__ == "__main__":

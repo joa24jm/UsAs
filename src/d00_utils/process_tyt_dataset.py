@@ -13,7 +13,8 @@ def get_tyt_columns() -> list:
             'question6', 'question7', 'question8']
 
 
-def load_tyt_dataset(filepath: str = "data/d01_raw/tyt/22-01-17_standardanswers.csv", user_id_col: str = 'user_id',
+def load_tyt_dataset(filepath: str = "../../data/d01_raw/tyt/22-10-24_standardanswers.csv",
+                     user_id_col: str = 'user_id',
                      timestamp_col: str = 'created_at', target_col: str = 'question3'):
     columns_to_keep = get_tyt_columns()
     test_users = get_tyt_test_users()
@@ -27,7 +28,7 @@ def load_tyt_dataset(filepath: str = "data/d01_raw/tyt/22-01-17_standardanswers.
 
 def main():
     tyt_dataset = load_tyt_dataset()
-    tyt_dataset.to_csv("data/d02_processed/tyt.csv", index=False)
+    tyt_dataset.to_csv("../../data/d02_processed/tyt.csv", index=False)
 
 
 if __name__ == "__main__":
