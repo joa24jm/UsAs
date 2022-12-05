@@ -213,7 +213,7 @@ def fit_and_calc_score(model, X_train, X_test, y_train, y_test, scores):
     y_pred = model.predict(X_test)
 
     f1_test, f1_final = calc_final_score(scores, y_pred, y_test)
-    print('f1_weighted testscore: ', round(f1_test, 3))
+    # print('f1_weighted testscore: ', round(f1_test, 3))
 
     return y_pred, f1_final
 
@@ -259,6 +259,21 @@ def cut_target(y_train, y_test, bins, LE, fit=False):
     y_test = LE.transform(y_test)
 
     return y_train, y_test, LE
+
+
+def create_user_dfs(data, min_assessments=10):
+    """
+    Group a large dataframe into sub dataframes with only one user per dataframe.
+    Return those dfs in a list
+    :param data: dataframe with user_id
+    :param min_assessments: minimum number of assessments to retain the user_df in the list, defaults to 10
+    """
+    # create a dict of dfs grouped by users id
+    df_groups = dict(list(data.groupby('user_id')))
+    # drop user_dfs with less than 11 assessments per user
+    df_groups = [df_groups[user_id] for user_id in df_groups.keys() if df_groups[user_id].shape[0] > min_assessments]
+
+    return df_groups
 
 
 def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=False):
