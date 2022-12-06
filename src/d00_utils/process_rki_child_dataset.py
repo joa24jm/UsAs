@@ -40,7 +40,7 @@ def compute_phq9_score(df: pd.DataFrame):
     return scores
 
 
-def load_rki_child_dataset(filepath: str = "data/d01_raw/ch/22-07-01_rki_children_followup.csv",
+def load_rki_child_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_children_followup.csv",
                            user_id_col: str = 'user_id', timestamp_col: str = 'created_at'):
     """
     Creates the RKI child dataset. Not following convention - excluding the target_col param because it is computed in this case.
@@ -58,7 +58,7 @@ def load_rki_child_dataset(filepath: str = "data/d01_raw/ch/22-07-01_rki_childre
 
 def main():
     rki_child_dataset = load_rki_child_dataset()
-    rki_child_dataset.to_csv("data/d02_processed/rki_child.csv", index=False)
+    rki_child_dataset.to_csv("../../data/d02_processed/rki_children.csv", index=False)
 
 
 if __name__ == "__main__":

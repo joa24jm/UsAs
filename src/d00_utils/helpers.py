@@ -179,6 +179,8 @@ def visualize_confusion_matrix(y_test, y_pred, mapping, final_score):
     cm_array_df = pd.DataFrame(cf_matrix, index=list(mapping.values()), columns=list(mapping.values()))
     sns.heatmap(cm_array_df, annot=True, cmap='Blues', fmt='')
     plt.title(f'Final score {round(final_score, 3)}')
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
     plt.show()
 
 
@@ -211,7 +213,7 @@ def fit_and_calc_score(model, X_train, X_test, y_train, y_test, scores):
     y_pred = model.predict(X_test)
 
     f1_test, f1_final = calc_final_score(scores, y_pred, y_test)
-    print('f1_weighted testscore: ', round(f1_test, 3))
+    # print('f1_weighted testscore: ', round(f1_test, 3))
 
     return y_pred, f1_final
 
@@ -246,8 +248,8 @@ def cut_target(y_train, y_test, bins, LE, fit=False):
     """
 
     # make cumberness a classification instead of regression for the target, not for the feature
-    y_train = pd.cut(y_train, bins=bins)
-    y_test = pd.cut(y_test, bins=bins)
+    y_train = pd.cut(y_train, bins=bins, include_lowest=True)
+    y_test = pd.cut(y_test, bins=bins, include_lowest=True)
 
     if fit:
         LE = LabelEncoder()
@@ -256,7 +258,22 @@ def cut_target(y_train, y_test, bins, LE, fit=False):
         y_train = LE.transform(y_train)
     y_test = LE.transform(y_test)
 
-    return y_train, y_test
+    return y_train, y_test, LE
+
+
+def create_user_dfs(data, min_assessments=10):
+    """
+    Group a large dataframe into sub dataframes with only one user per dataframe.
+    Return those dfs in a list
+    :param data: dataframe with user_id
+    :param min_assessments: minimum number of assessments to retain the user_df in the list, defaults to 10
+    """
+    # create a dict of dfs grouped by users id
+    df_groups = dict(list(data.groupby('user_id')))
+    # drop user_dfs with less than 11 assessments per user
+    df_groups = [df_groups[user_id] for user_id in df_groups.keys() if df_groups[user_id].shape[0] > min_assessments]
+
+    return df_groups
 
 
 def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=False):
@@ -277,12 +294,12 @@ def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=F
     X_test = df_test[features]
     y_test = df_test[target]
 
-    y_train, y_test = cut_target(y_train, y_test, bins, LE, fit=fit)
+    y_train, y_test, LE = cut_target(y_train, y_test, bins, LE, fit=fit)
 
     # instantiate model
     model = RandomForestClassifier(random_state=1994)
 
-    return model, X_train, X_test, y_train, y_test
+    return model, X_train, X_test, y_train, y_test, LE
 
 
 ################################################################# tests
@@ -340,8 +357,6 @@ def test_visualize_confusion_matrix():
 
 def main():
     df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
-
-    test_class_model(df)
 
 
 if __name__ == '__main__':

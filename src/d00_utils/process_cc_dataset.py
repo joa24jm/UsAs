@@ -1,4 +1,5 @@
 import pandas as pd
+pd.options.mode.chained_assignment = None
 from src.d00_utils import helpers
 
 
@@ -8,8 +9,9 @@ def get_cc_columns() -> list:
             'diarrhea', 'generalweakness', 'corona_result']
 
 
-def load_corona_check(filepath: str = 'data/d01_raw/cc/22-06-29_corona-check-data.csv', user_id_col: str = 'user_id',
-                      timestamp_col: str = 'created_at', target_col: str = 'question3'):
+def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-05_corona-check-data.csv',
+                      user_id_col: str = 'user_id',
+                      timestamp_col: str = 'created_at', target_col: str = 'corona_result'):
     def drop_ambiguous_users_cc(df):
         """
         Takes the whole df, filters one user and drops assessments from that user, if
@@ -26,7 +28,7 @@ def load_corona_check(filepath: str = 'data/d01_raw/cc/22-06-29_corona-check-dat
 
         for user_id in user_ids:
 
-            sub_df = df[df['user_id'] == user_id]
+            sub_df = df[df[user_id_col] == user_id]
 
             # filled out for him-/herself
             sub_df = sub_df[sub_df.author == 'MYSELF']
@@ -65,7 +67,7 @@ def load_corona_check(filepath: str = 'data/d01_raw/cc/22-06-29_corona-check-dat
         s = df.user_id.value_counts() > 1
         users = s[s == True].index
 
-        return df[df['user_id'].isin(users)]
+        return df[df[user_id_col].isin(users)]
 
     df = pd.read_csv(filepath)
     df = drop_one_time_users_cc(df)
@@ -74,12 +76,14 @@ def load_corona_check(filepath: str = 'data/d01_raw/cc/22-06-29_corona-check-dat
 
     columns_to_keep = get_cc_columns()
     df = df[columns_to_keep]
-    return helpers.create_target_shift(df, target_name='corona_result')
+    df = helpers.create_target_shift(df, target_name=target_col)
+    df.sort_values(by=[timestamp_col, user_id_col], inplace=True)
+    return df
 
 
 def main():
     cc_dataset = load_corona_check()
-    cc_dataset.to_csv("data/d02_processed/cc.csv", index=False)
+    cc_dataset.to_csv("../../data/d02_processed/cc.csv", index=False)
 
 
 if __name__ == "__main__":
