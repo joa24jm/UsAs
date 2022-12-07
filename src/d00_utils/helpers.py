@@ -276,6 +276,58 @@ def create_user_dfs(data, min_assessments=10):
     return df_groups
 
 
+def create_train_and_test_set(df):
+    """
+    Uses 80 % of the first users as train data and 20 % of the last users as test data.
+    Users are ordered by id. That is, the smaller a user id, the longer the user participates in the study.
+    :param df: dataframe with all data
+    :return:  df_train, df_test
+    """
+
+    # define random state
+    random_state = 1994
+
+    # define list of users
+    users_list = sorted(df.user_id.unique())
+    # 20 % into train users
+    s = pd.Series(users_list)
+    split_idx = int(len(s) * 0.8)
+    test_users = s[split_idx:].values
+    train_users = s[:split_idx].values
+    # unit test 1
+    assert set([x for x in users_list if x not in set(test_users)]) == set(s[:split_idx].values)
+    # unit test 2
+    assert set(list(train_users) + list(test_users)) == set(users_list)
+
+    # drop row if one value is missing
+    df.dropna(axis='index', how='any', inplace=True)
+
+    # get train and test dataframe
+    # use train to check approaches, use test to validate approaches'
+    df_train = df[df['user_id'].isin(train_users)]
+    df_test = df[df['user_id'].isin(test_users)]
+
+    return df_train, df_test
+
+
+def user_wise_missing_value_treatment(df, features, user_id_col='user_id'):
+    """
+    If a value from a user is missing, fill with the mean of all values from this user for this answer.
+    :param df: dataframe containing a 'user_id' column
+    :param features: list of features to treat
+    :param user_id_col: defaults to 'user_id'
+
+    :return: df with filled na values
+    """
+
+    grp_by = df.groupby(user_id_col)
+
+    for feature in features:
+        df[feature] = df[feature].fillna(grp_by[feature].transform('mean'))
+
+    return df
+
+
 def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=False):
     """
 
@@ -287,6 +339,10 @@ def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=F
     :param LE: Label Encoder object
     :return:
     """
+
+    # missing value treatment
+    df_train = user_wise_missing_value_treatment(df_train, features)
+    df_test = user_wise_missing_value_treatment(df_test, features)
 
     # get train and test subsets for X and y
     X_train = df_train[features]
@@ -356,7 +412,7 @@ def test_visualize_confusion_matrix():
 
 
 def main():
-    df = pd.read_csv('../../data/d01_raw/uniti/uniti_dataset_22.09.28.csv')
+    df = pd.read_csv('../../data/d02_processed/tyt.csv', index_col='answer_id')
 
 
 if __name__ == '__main__':
