@@ -299,9 +299,6 @@ def create_train_and_test_set(df):
     # unit test 2
     assert set(list(train_users) + list(test_users)) == set(users_list)
 
-    # drop row if one value is missing
-    df.dropna(axis='index', how='any', inplace=True)
-
     # get train and test dataframe
     # use train to check approaches, use test to validate approaches'
     df_train = df[df['user_id'].isin(train_users)]
@@ -310,25 +307,35 @@ def create_train_and_test_set(df):
     return df_train, df_test
 
 
-def user_wise_missing_value_treatment(df, features, user_id_col='user_id'):
+def user_wise_missing_value_treatment(df, features, target, user_id_col='user_id'):
     """
     If a value from a user is missing, fill with the mean of all values from this user for this answer.
     :param df: dataframe containing a 'user_id' column
     :param features: list of features to treat
+    :param target: name of target column
     :param user_id_col: defaults to 'user_id'
 
     :return: df with filled na values
     """
 
+    # drop row if target is missing
+    df.dropna(axis='index', subset=[target], inplace=True)
+
     grp_by = df.groupby(user_id_col)
 
     for feature in features:
+        # this applies for users with more than one assessment
         df[feature] = df[feature].fillna(grp_by[feature].transform('mean'))
+
+    # this applies for users with only one assessment
+    for i in df.columns[df.isnull().any(axis=0)]:
+        df[i].fillna(df[i].mean(), inplace=True)
+
 
     return df
 
 
-def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=False):
+def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=False, cut=True):
     """
 
     :param df_train: Whole dataframe with features, target, created_at, user_id for train rows
@@ -341,8 +348,8 @@ def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=F
     """
 
     # missing value treatment
-    df_train = user_wise_missing_value_treatment(df_train, features)
-    df_test = user_wise_missing_value_treatment(df_test, features)
+    df_train = user_wise_missing_value_treatment(df_train, features, target)
+    df_test = user_wise_missing_value_treatment(df_test, features, target)
 
     # get train and test subsets for X and y
     X_train = df_train[features]
@@ -350,7 +357,8 @@ def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=F
     X_test = df_test[features]
     y_test = df_test[target]
 
-    y_train, y_test, LE = cut_target(y_train, y_test, bins, LE, fit=fit)
+    if cut: # some targets are already categorical and don't need to get binned
+        y_train, y_test, LE = cut_target(y_train, y_test, bins, LE, fit=fit)
 
     # instantiate model
     model = RandomForestClassifier(random_state=1994)
@@ -412,7 +420,22 @@ def test_visualize_confusion_matrix():
 
 
 def main():
-    df = pd.read_csv('../../data/d02_processed/tyt.csv', index_col='answer_id')
+    df = pd.read_csv('../../data/d02_processed/cc.csv', index_col='answer_id')
+
+    # first 80 % of users into train, second 20 % into test
+    df_train, df_test = create_train_and_test_set(df)
+
+    features = None #TODO: tbd
+    target = 'corona_result'
+    time_col = 'created_at'
+
+    # No Label encoding required but some functions need it as arguments
+    LE = None
+    bins = None
+
+    # preare dataset and model
+    model, X_train, X_test, y_train, y_test, _ = prepare_and_instantiate(df_train, df_test, features, target,
+                                                                                 bins, LE, fit=False, cut=False)
 
 
 if __name__ == '__main__':
