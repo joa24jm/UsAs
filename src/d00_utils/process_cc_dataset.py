@@ -9,7 +9,7 @@ def get_cc_columns() -> list:
             'diarrhea', 'generalweakness', 'corona_result']
 
 
-def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-05_corona-check-data.csv',
+def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-27_corona-check-data.csv',
                       user_id_col: str = 'user_id',
                       timestamp_col: str = 'created_at', target_col: str = 'corona_result'):
     def drop_ambiguous_users_cc(df):
@@ -20,7 +20,6 @@ def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-05_corona-che
         - the education varies from the most common education of the users
         - the user filled out the questionnaire for others
         :param df: corona check dataframe
-        :param user_id: user id of that users
         :return: reduced dataframe
         """
 
