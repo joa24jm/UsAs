@@ -14,7 +14,8 @@ from sklearn.preprocessing import LabelEncoder
 
 class baseline_model:
 
-    def get_baseline_user_prediction(self, data='None', target_name='None', approach='last', time_col='created_at'):
+    def get_baseline_user_prediction(self, data='None', target_name='None', approach='last', time_col='created_at',
+                                     mode=False):
         """
         Gets a baseline prediction on a user level. Can either return the last known target of this user or all targets.
         :param data: training data of this fold
@@ -36,8 +37,12 @@ class baseline_model:
 
             for i, idx in enumerate(user_data.index):
                 if i == 0:
+                    if not mode:
+                        val = data.loc[:idx, target_name].mean()
+                    else:
+                        val = data.loc[:idx, target_name].mode()[0]
                     # for first data of this user, there is no former data known
-                    user_data.loc[idx, 'baseline_estimate'] = data.loc[:idx, target_name].mean()
+                    user_data.loc[idx, 'baseline_estimate'] = val
                 else:
                     if approach == 'last':
                         # last assessment of this user
@@ -45,20 +50,25 @@ class baseline_model:
 
                     if approach == 'all':
                         # all assessments of this user
-                        user_data.loc[idx, 'baseline_estimate'] = user_data.iloc[:i + 1][target_name].mean()
+                        if not mode:
+                            val = user_data.iloc[:i + 1][target_name].mean()
+                        else:
+                            val = user_data.iloc[:i + 1][target_name].mode()[0]
+                        user_data.loc[idx, 'baseline_estimate'] = val
 
             data.loc[user_data.index, 'baseline_estimate'] = user_data['baseline_estimate']
 
         return data['baseline_estimate']
 
     def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last',
-                                           time_col='created_at'):
+                                           time_col='created_at', mode=False):
         """
         Gets a baseline prediction on an assessment level. Can either return the last known target of this user or all targets.
         :param data: train data of this fold
         :param target_name: name of target
         :param approach: 'all' or 'last'
         :param time_col: name of timestamp column
+        :param mode: Whether to find a most common value as replace value or a mean
         :return: prediction for target at t1
         """
 
@@ -69,7 +79,10 @@ class baseline_model:
 
             if approach == 'last':
                 if i == 0:
-                    pred = data[target_name].mean()
+                    if not mode:
+                        pred = data[target_name].mean()
+                    else:
+                        pred = data[target_name].mode()[0]
                 else:
                     pred = data.iloc[i - 1][target_name]
                 data.loc[a_id, 'baseline_estimate'] = pred
@@ -77,10 +90,16 @@ class baseline_model:
             if approach == 'all':
                 if i == 0:
                     # cold start problem, so take mean of all assessments
-                    pred = data[target_name].mean()
+                    if not mode:
+                        pred = data[target_name].mean()
+                    else:
+                        pred = data[target_name].mode()[0]
                 else:
                     # mean of all so far known assessments
-                    pred = data.iloc[:i + 1][target_name].mean()
+                    if not mode:
+                        pred = data.iloc[:i + 1][target_name].mean()
+                    else:
+                        pred = data.iloc[:i + 1][target_name].mode()[0]
                 data.loc[a_id, 'baseline_estimate'] = pred
 
         return data['baseline_estimate']
@@ -328,9 +347,8 @@ def user_wise_missing_value_treatment(df, features, target, user_id_col='user_id
         df[feature] = df[feature].fillna(grp_by[feature].transform('mean'))
 
     # this applies for users with only one assessment
-    for i in df.columns[df.isnull().any(axis=0)]:
-        df[i].fillna(df[i].mean(), inplace=True)
-
+    for col in df.columns[df.isnull().any(axis=0)]:
+        df[col].fillna(df[col].mean(), inplace=True)
 
     return df
 
@@ -420,22 +438,8 @@ def test_visualize_confusion_matrix():
 
 
 def main():
-    df = pd.read_csv('../../data/d02_processed/cc.csv', index_col='answer_id')
+    df = pd.read_csv('../../data/d02_processed/cc.csv')
 
-    # first 80 % of users into train, second 20 % into test
-    df_train, df_test = create_train_and_test_set(df)
-
-    features = None #TODO: tbd
-    target = 'corona_result'
-    time_col = 'created_at'
-
-    # No Label encoding required but some functions need it as arguments
-    LE = None
-    bins = None
-
-    # preare dataset and model
-    model, X_train, X_test, y_train, y_test, _ = prepare_and_instantiate(df_train, df_test, features, target,
-                                                                                 bins, LE, fit=False, cut=False)
 
 
 if __name__ == '__main__':
