@@ -1,4 +1,5 @@
 import pandas as pd
+
 pd.options.mode.chained_assignment = None
 from src.d00_utils import helpers
 
@@ -7,6 +8,32 @@ def get_cc_columns() -> list:
     return ['answer_id', 'user_id', 'created_at', 'person', 'age', 'gender', 'education', 'author', 'fever',
             'sorethroat', 'runnynose', 'cough', 'losssmell', 'losstaste', 'shortnessbreath', 'headace', 'musclepain',
             'diarrhea', 'generalweakness', 'corona_result']
+
+
+def prepare_for_ml(df, get_features=False):
+    """
+    Convert boolean and categorical features to numbers
+
+    :param df:
+    :return: prepared dataframe
+    """
+
+    bool_features = ['fever', 'sorethroat', 'runnynose', 'cough',
+                     'losssmell', 'losstaste', 'shortnessbreath', 'headace', 'musclepain',
+                     'diarrhea', 'generalweakness']
+
+    df[bool_features] = df[bool_features].replace(to_replace={True: 1, False: 0})
+
+    df.replace(to_replace={'YES': 1, 'NO': 0}, inplace=True)
+
+    features = bool_features + ['corona_result']
+
+    if get_features:
+        return features
+
+    df = df[['created_at', 'user_id', 'answer_id', 'corona_result_t1'] + features]
+
+    return df
 
 
 def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-27_corona-check-data.csv',
@@ -82,6 +109,7 @@ def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-27_corona-che
 
 def main():
     cc_dataset = load_corona_check()
+    cc_dataset, features = prepare_for_ml(cc_dataset)
     cc_dataset.to_csv("../../data/d02_processed/cc.csv", index=False)
 
 
