@@ -58,7 +58,7 @@ class baseline_model:
 
             data.loc[user_data.index, 'baseline_estimate'] = user_data['baseline_estimate']
 
-        return data['baseline_estimate']
+        return data['baseline_estimate'].astype(int)
 
     def get_baseline_assessment_prediction(self, data='None', target_name='None', approach='last',
                                            time_col='created_at', mode=False):
@@ -102,7 +102,7 @@ class baseline_model:
                         pred = data.iloc[:i + 1][target_name].mode()[0]
                 data.loc[a_id, 'baseline_estimate'] = pred
 
-        return data['baseline_estimate']
+        return data['baseline_estimate'].astype(int)
 
 
 def shuffle_array(user_array, n, seed=1994):
@@ -416,12 +416,14 @@ def test_calc_cum_mean():
 
 def test_class_model(df):
     # test baseline approach
-    target_name = 'cumberness'
+    target_name = 'corona_result_t1'
     model = baseline_model()
     for approach in ['last', 'all']:
         # pred_series = model.get_baseline_user_prediction(data=df, target_name=target_name, approach=approach)
-        pred_series = model.get_baseline_assessment_prediction(data=df, target_name=target_name, approach=approach)
+        pred_series = model.get_baseline_assessment_prediction(data=df, target_name=target_name, approach=approach, mode=True)
         print(approach, '\t', pred_series)
+
+    return pred_series
 
 
 
