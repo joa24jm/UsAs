@@ -109,7 +109,7 @@ def load_corona_check(filepath: str = '../../data/d01_raw/cc/22-10-27_corona-che
 
 def main():
     cc_dataset = load_corona_check()
-    cc_dataset, features = prepare_for_ml(cc_dataset)
+    cc_dataset = prepare_for_ml(cc_dataset, get_features=False)
     cc_dataset.to_csv("../../data/d02_processed/cc.csv", index=False)
 
 
