@@ -1,10 +1,15 @@
+import numpy as np
 import pandas as pd
 from src.d00_utils import helpers
 
 
 def get_ch_stress_columns():
-    return ['answer_id', 'questionnaire_id', 'user_id', 'created_at',
+    return ['answer_id', 'user_id', 'created_at',
             'pss1', 'pss2', 'pss3', 'pss4', 'pss5', 'pss6', 'pss7', 'pss8', 'pss9', 'pss10']
+
+
+def get_features():
+    return [f'pss{i}' for i in np.arange(1, 11)]
 
 
 def load_ch_stress_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_stress_followup.csv",
