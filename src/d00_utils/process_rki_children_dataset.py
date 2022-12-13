@@ -1,5 +1,5 @@
 import pandas as pd
-from src.d00_utils import helpers
+from src.d00_utils import helpers, process_rki_parent_dataset
 
 
 def get_rki_child_columns():
@@ -10,35 +10,8 @@ def get_rki_child_columns():
             'kj_scas5', 'kj_scas6', 'kj_scas7', 'kj_scas8', 'kj_phq_hope', 'kj_phq_interest', 'kj_phq_sleep']
 
 
-def phq9_score_to_level(x):
-    try:
-        if x <= 4:
-            return "None"
-        elif x <= 9:
-            return "Mild"
-        elif x <= 14:
-            return "Moderate"
-        elif x <= 19:
-            return "Moderate-to-Severe"
-        elif x <= 27:
-            return "Severe"
-        else:
-            return "Error"
-    except:
-        print(x)
-        input("Error")
-
-
-def compute_phq9_score(df: pd.DataFrame):
-    """
-   Computes the score for the phq9 questionnaire as the sum of all questions.
-   :param df: the data frame with the questionnaire
-   :return: data frame with new column 'phq9_score' that has the total
-   """
-    phq9_columns = ['phq9_a', 'phq9_b', 'phq9_c', 'phq9_d', 'phq9_e', 'phq9_f', 'phq9_g', 'phq9_h', 'phq9_i']
-    scores = df[phq9_columns].sum(axis=1).apply(phq9_score_to_level)
-    return scores
-
+def get_features():
+    return ['kj_scas1', 'kj_qol1', 'kj_qol6', 'kj_scas6', 'kj_phq_hope', 'kj_phq_interest', 'kj_phq_sleep']
 
 def load_rki_child_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_children_followup.csv",
                            user_id_col: str = 'user_id', timestamp_col: str = 'created_at'):
@@ -51,6 +24,7 @@ def load_rki_child_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_c
     """
     df = pd.read_csv(filepath)
     df = df[get_rki_child_columns()]
+    df = process_rki_parent_dataset.phq9_level_to_category(df, ['kj_phq_hope'])
     df = helpers.create_target_shift(df, 'kj_phq_hope')
     df.sort_values(by=[timestamp_col, user_id_col], inplace=True)
     return df
