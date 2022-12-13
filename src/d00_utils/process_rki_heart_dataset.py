@@ -8,6 +8,8 @@ def get_rki_heart_columns():
             'hyper5', 'diabe1', 'diabe2', 'diabe4', 'diabe5', 'blood1', 'blood2', 'blood3', 'medic1', 'medic2',
             'physi1', 'physi2', 'hospi1', 'hospi2', 'medic3', 'pain1', 'pain2']
 
+def get_features():
+    return ['sport2', 'veget2', 'fruit2', 'smoke1', 'hyper1', 'physi1', 'pain1', 'pain2']
 
 def load_rki_heart_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv",
                            user_id_col: str = 'user_id', timestamp_col: str = 'created_at'):
