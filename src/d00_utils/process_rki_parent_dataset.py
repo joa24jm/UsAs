@@ -33,15 +33,40 @@ def phq9_score_to_level(x):
         input("Error")
 
 
+def phq9_level_to_category(df, cols):
+    """
+    Convert level to category
+    :param df: dataframe
+    :param cols: list of columns to apply
+    :return: categorical columns
+    """
+
+    dic = {'None': 0,
+           'Mild': 1,
+           'Moderate': 2,
+           'Moderate-to-Severe': 3,
+           'Severe': 4}
+
+    df[cols] = df[cols].replace(dic)
+
+    return df
+
+
 def compute_phq9_score(df: pd.DataFrame):
     """
-   Computes the score for the phq9 questionnaire as the sum of all questions.
-   :param df: the data frame with the questionnaire
-   :return: data frame with new column 'phq9_score' that has the total
-   """
+    Computes the score for the phq9 questionnaire as the sum of all questions.
+    :param df: the data frame with the questionnaire
+    :return: data frame with new column 'phq9_score' that has the total
+    """
     phq9_columns = ['phq9_a', 'phq9_b', 'phq9_c', 'phq9_d', 'phq9_e', 'phq9_f', 'phq9_g', 'phq9_h', 'phq9_i']
     scores = df[phq9_columns].sum(axis=1).apply(phq9_score_to_level)
     return scores
+
+
+def get_features(df: pd.DataFrame):
+    features = [col for col in df.columns if ('phq9' in col) and ('_t1' not in col)]
+
+    return features
 
 
 def load_rki_parent_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_parent_followup.csv",
@@ -56,6 +81,7 @@ def load_rki_parent_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_
     df = pd.read_csv(filepath)
     df['phq9_score'] = compute_phq9_score(df)
     df = df[get_rki_parent_columns()]
+    df = phq9_level_to_category(df, ['phq9_score'])
     df = helpers.create_target_shift(df, 'phq9_score')
     df.sort_values(by=[timestamp_col, user_id_col], inplace=True)
     return df
