@@ -161,13 +161,14 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
             'std_days': np.array(days_means).std()}  # std of length between two filled out assessments in days
 
 
-def calc_cum_mean(df, features, user_id='user_id'):
+def calc_cum_mean(df, features, user_id='user_id', categorical=False):
     """
     Grouped per user, calculate a cumulative mean for each user. For the first assessment, the mean is the reported value.
     For the second assessment, the mean is the mean of the last and the current assessment.
     :param df: train df containing user_id, features, and target.
     :param features: list of feature names
     :param user_id: name of user_id column in df_train
+    :param categorical: Cast floats to integers for categories
     :return: df_train with the same shape as the input but with cumulative user-wise means in each row
     """
 
@@ -181,6 +182,9 @@ def calc_cum_mean(df, features, user_id='user_id'):
         df.drop(columns=[f'{feature}_cum_sum', f'{feature}'], inplace=True)
         # declare grouped cumulative mean column as new feature
         df.rename(columns={f'{feature}_cum_mean': f'{feature}'}, inplace=True)
+        if categorical:
+            # round to integer
+            df[f'{feature}'] = df[f'{feature}'].apply(lambda x: int(round(x)))
 
     return df
 
@@ -425,6 +429,10 @@ def test_class_model(df):
 
     return pred_series
 
+
+def get_approaches():
+    return ['bl_user_based_last', 'bl_user_based_all', 'bl_assessment_based_last', 'bl_assessment_based_all',
+            'answer_cut', 'time_cut', 'user_wise', 'average_user']
 
 
 def test_visualize_confusion_matrix():
