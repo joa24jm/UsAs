@@ -10,6 +10,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
+import random
 
 
 class baseline_model:
@@ -299,7 +300,7 @@ def create_user_dfs(data, min_assessments=10):
     return df_groups
 
 
-def create_train_and_test_set(df):
+def create_train_and_test_set(df, sort_users=True, seed=1994):
     """
     Uses 80 % of the first users as train data and 20 % of the last users as test data.
     Users are ordered by id. That is, the smaller a user id, the longer the user participates in the study.
@@ -307,11 +308,14 @@ def create_train_and_test_set(df):
     :return:  df_train, df_test
     """
 
-    # define random state
-    random_state = 1994
+    if sort_users:
+        # define list of users
+        users_list = sorted(df.user_id.unique())
+    else: # random order of users
+        random.seed(seed)
+        users_list = df.user_id.unique()
+        np.random.shuffle(users_list)
 
-    # define list of users
-    users_list = sorted(df.user_id.unique())
     # 20 % into train users
     s = pd.Series(users_list)
     split_idx = int(len(s) * 0.8)
@@ -450,6 +454,9 @@ def test_visualize_confusion_matrix():
 def main():
     df = pd.read_csv('../../data/d02_processed/cc.csv')
 
+    df_train, df_test = create_train_and_test_set(df, sort_users=False, seed=1994)
+
+    foo=1
 
 
 if __name__ == '__main__':
