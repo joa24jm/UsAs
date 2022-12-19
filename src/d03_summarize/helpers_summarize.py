@@ -33,6 +33,20 @@ def load_approach_tables(path='../../results/tables/approaches', save=False):
 def rank_approaches(path='../../results/tables/approches/approaches.xlsx'):
     df = pd.read_excel(path)
 
+    
+def prepare_results(df):
+
+    # prepare data
+    idxs = [idx for idx in df.transpose().index if 'f1' in idx]
+    df_ranks = df.rank(ascending=False).transpose().loc[idxs, :]
+
+    # calculate results
+    result = pd.DataFrame(df_ranks.mean().apply(lambda x: round(x, 2)))
+    result.rename(columns={0:'average_rank'}, inplace=True)
+    result['average_rank_std'] = df_ranks.std().apply(lambda x: round(x, 2))
+
+    return result.sort_values(by='average_rank')
+    
 
 def main():
     path = '../../results/tables/approaches'
@@ -44,3 +58,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
