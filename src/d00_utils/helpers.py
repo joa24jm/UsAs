@@ -436,7 +436,7 @@ def test_class_model(df):
 
 def get_approaches():
     return ['bl_user_based_last', 'bl_user_based_all', 'bl_assessment_based_last', 'bl_assessment_based_all',
-            'answer_cut', 'time_cut', 'user_wise', 'average_user']
+            'user_cut', 'time_cut', 'user_wise', 'average_user']
 
 
 def test_visualize_confusion_matrix():
