@@ -146,20 +146,24 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
             date_end = sub_df[date_col_name].iloc[i + 1]
             date_end = datetime.strptime(date_end, form)
 
+            if date_start == date_end:
+                continue
+
             delta = date_end - date_start
 
             hours.append(delta.total_seconds() / 3600)
             days.append(delta.total_seconds() / 3600 / 24)
 
-        hours_means.append(np.array(hours).mean())
-        days_means.append(np.array(days).mean())
+        hours_means.append(np.nanmedian(np.array(hours)))
+        days_means.append(np.nanmedian(np.array(days)))
 
-    return {'avg hours between two assessments': np.array(hours_means).mean(),
+    return {'Median hours between two assessments': np.nanmedian(np.array(hours_means)),
             # average length between two filled out assessments in hours
-            'avg days between two assessments': np.array(days_means).mean(),
+            'Median days between two assessments': np.nanmedian(np.array(days_means)),
             # average length between two filled out assessments in days
-            'std_hours': np.array(hours_means).std(),  # std of length between two filled out assessments in hours
-            'std_days': np.array(days_means).std()}  # std of length between two filled out assessments in days
+            'std_hours': np.nanstd(np.array(hours_means)),  # std of length between two filled out assessments in hours
+            'std_days': np.nanstd(np.array(days_means))  # std of length between two filled out assessments in days
+            }
 
 
 def calc_cum_mean(df, features, user_id='user_id', categorical=False):
@@ -452,11 +456,13 @@ def test_visualize_confusion_matrix():
 
 
 def main():
-    df = pd.read_csv('../../data/d02_processed/cc.csv')
+    df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv')
 
-    df_train, df_test = create_train_and_test_set(df, sort_users=False, seed=1994)
+    #    tyt_copy = df.copy()
+    #    tyt_copy.created_at = df.created_at.dt.strftime('%Y-%m-%d %H:%M:%S')
+    res = find_schedule_pattern(df)
 
-    foo=1
+    foo = 1
 
 
 if __name__ == '__main__':
