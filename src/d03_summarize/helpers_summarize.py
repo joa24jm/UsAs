@@ -6,6 +6,17 @@ sys.path.insert(0, "../..")
 import pandas as pd
 from src.d00_utils import helpers
 
+def get_dataset_names():
+    return ['cc', 'ch_stress', 'rki_children', 'rki_heart', 'rki_parent', 'tyt', 'uniti']
+
+def format_f1_and_std(df, col):
+    """
+    :param df: pandas dataframe
+    :param col: name of column
+    """
+
+    return df[f'{col}_f1'].map('{:.3f}'.format) + " (" + df[f'{col}_std'].map('{:.3f}'.format) + ")"
+
 
 def load_approach_tables(path='../../results/tables/approaches', save=False):
     """
