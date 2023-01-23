@@ -9,6 +9,16 @@ from src.d00_utils import helpers
 def get_dataset_names():
     return ['cc', 'ch_stress', 'rki_children', 'rki_heart', 'rki_parent', 'tyt', 'uniti']
 
+def load_col_paper_mapping():
+
+    dic = {'rki_children':'chy',
+           'rki_heart':'chp',
+           'rki_parent':'cha',
+           'ch_stress':'chs'
+           }
+
+    return dic
+
 def format_f1_and_std(df, col):
     """
     :param df: pandas dataframe
