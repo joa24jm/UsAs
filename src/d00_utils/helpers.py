@@ -9,6 +9,7 @@ from sklearn.metrics import confusion_matrix, f1_score
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import LabelEncoder
 import random
 
@@ -391,7 +392,8 @@ def prepare_and_instantiate(df_train, df_test, features, target, bins, LE, fit=F
         y_train, y_test, LE = cut_target(y_train, y_test, bins, LE, fit=fit)
 
     # instantiate model
-    model = RandomForestClassifier(random_state=1994)
+    # model = RandomForestClassifier(random_state=1994)
+    model = DecisionTreeClassifier(max_depth=X_test.shape[1], random_state=1994, class_weight='balanced')
 
     return model, X_train, X_test, y_train, y_test, LE
 

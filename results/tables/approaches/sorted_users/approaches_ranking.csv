@@ -1,3 +1,3 @@
-,time_cut,bl_user_based_last,bl_user_based_all,user_cut,average_user,user_wise,bl_assessment_based_last,bl_assessment_based_all
-average_rank,2.29,3.29,3.57,3.57,3.86,4.33,6.86,7.71
-average_rank_std,1.5,1.7,2.37,1.72,0.69,2.07,0.69,0.49
+,time_cut,bl_user_based_last,user_cut,bl_user_based_all,average_user,user_wise,bl_assessment_based_last,bl_assessment_based_all
+average_rank,2.29,3.0,3.14,3.29,4.14,5.17,6.86,7.71
+average_rank_std,0.95,1.91,1.07,2.43,1.21,1.33,0.69,0.49
