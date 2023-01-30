@@ -6,7 +6,9 @@ sys.path.insert(0, "../..")
 import pandas as pd
 from src.d00_utils import helpers
 
-def get_dataset_names():
+def get_dataset_names(paper_naming_convention=False):
+    if paper_naming_convention:
+            return ['cc', 'chs', 'chy', 'chp', 'cha', 'tyt', 'uniti']
     return ['cc', 'ch_stress', 'rki_children', 'rki_heart', 'rki_parent', 'tyt', 'uniti']
 
 def load_col_paper_mapping():
