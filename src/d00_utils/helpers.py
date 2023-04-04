@@ -156,6 +156,8 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
 
         hours_means.append(np.nanmedian(np.array(hours)))
         days_means.append(np.nanmedian(np.array(days)))
+        if np.nanmedian(np.array(days)) < 1000:
+            print(np.nanmedian(np.array(days)))
 
     return {'Median hours between two assessments': np.nanmedian(np.array(hours_means)),
             # average length between two filled out assessments in hours
@@ -243,7 +245,7 @@ def fit_and_calc_score(model, X_train, X_test, y_train, y_test, scores):
     f1_test, f1_final = calc_final_score(scores, y_pred, y_test)
     # print('f1_weighted testscore: ', round(f1_test, 3))
 
-    return y_pred, f1_final
+    return y_pred, f1_final, model
 
 
 def create_target_shift(df, target_name='target'):

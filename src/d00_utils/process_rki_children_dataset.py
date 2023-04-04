@@ -11,7 +11,7 @@ def get_rki_child_columns():
 
 
 def get_features():
-    return ['kj_scas1', 'kj_qol1', 'kj_qol6', 'kj_scas6', 'kj_phq_hope', 'kj_phq_interest', 'kj_phq_sleep']
+    return ['kj_qol1', 'kj_qol6', 'kj_phq_hope', 'kj_phq_interest', 'kj_phq_sleep']
 
 def load_rki_child_dataset(filepath: str = "../../data/d01_raw/ch/22-10-05_rki_children_followup.csv",
                            user_id_col: str = 'user_id', timestamp_col: str = 'created_at'):
