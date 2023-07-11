@@ -128,6 +128,8 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
            date_col_name: Name of the column containing the collection time stamp
     :return: dict like {hours: , days: , weeks: }
     """
+
+    all_day_gaps = list()
     # find all users with more than two assessments
     s = df.user_id.value_counts() > 2
     user_ids = s[s == True].index
@@ -153,6 +155,7 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
 
             hours.append(delta.total_seconds() / 3600)
             days.append(delta.total_seconds() / 3600 / 24)
+            all_day_gaps.append(delta.total_seconds() / 3600 / 24)
 
         hours_means.append(np.nanmedian(np.array(hours)))
         days_means.append(np.nanmedian(np.array(days)))
@@ -163,7 +166,7 @@ def find_schedule_pattern(df, form='%Y-%m-%d %H:%M:%S', date_col_name='created_a
             # average length between two filled out assessments in days
             'std_hours': np.nanstd(np.array(hours_means)),  # std of length between two filled out assessments in hours
             'std_days': np.nanstd(np.array(days_means))  # std of length between two filled out assessments in days
-            }
+            }, all_day_gaps
 
 
 def calc_cum_mean(df, features, user_id='user_id', categorical=False):
@@ -456,11 +459,21 @@ def test_visualize_confusion_matrix():
 
 
 def main():
-    df = pd.read_csv('../../data/d01_raw/tyt/22-10-24_standardanswers.csv')
+    chp = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_parent_followup.csv')
+    chs = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_heart_followup.csv')
+    chk = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_children_followup.csv')
+    chst = pd.read_csv('../../data/d01_raw/ch/22-10-05_rki_stress_followup.csv')
 
     #    tyt_copy = df.copy()
     #    tyt_copy.created_at = df.created_at.dt.strftime('%Y-%m-%d %H:%M:%S')
-    res = find_schedule_pattern(df)
+    _, all_day_gaps = find_schedule_pattern(chp)
+    dic = {'chp': all_day_gaps}
+    _, all_day_gaps = find_schedule_pattern(chs)
+    dic['chs'] = all_day_gaps
+    _, all_day_gaps = find_schedule_pattern(chk)
+    dic['chk'] = all_day_gaps
+    _, all_day_gaps = find_schedule_pattern(chst)
+    dic['chst'] = all_day_gaps
 
     foo = 1
 
