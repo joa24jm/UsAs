@@ -1,4 +1,4 @@
-# 7 observational mHealth studies and 10 years of experience: Can ignoring groups in Machine Learning pipelines lead to overestimation of model performance? Analyses of group-wise validation as well as baseline and concept-drift considerations.
+# From Hidden Groups to Robust Models: How To Better Estimate Performance Of Mobile Health Models
 
 ## Getting started
 1. Request data from the author via **johannes.allgaier@uni-wuerzburg.de** and create a ``data`` folder in the root directory of this project.
